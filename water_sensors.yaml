@@ -1,0 +1,57 @@
+# - trigger:    
+#     - trigger: template
+#       id: template
+#       value_template: >
+#         {{ now().minute % 2==0 }}
+#     - trigger: time_pattern
+#       id: pattern
+#       minutes: "/5"
+#   sensor:
+#     - name: "Watermeter Test"
+#       unique_id: sensor.watermeter_test
+#       state: >
+#         {{ trigger.id }}
+
+- trigger:
+    - trigger: template
+      value_template: >
+        {{ now().minute % 15==0 }}
+    - trigger: state
+      entity_id:
+        - input_number.watermeter_setpoint
+        - sensor.watermeter_total_l      
+  sensor:
+    - name: "Watermeter Total.L"
+      unique_id: sensor.watermeter_total_ltr
+      state_class: total_increasing
+      icon: "mdi:water"
+      device_class: water
+      unit_of_measurement: "L"
+      state: >
+        {% set trigger_id = 'sensor.watermeter_total_l' %}
+        {% set sql_id = 'sensor.select_last_watermeter_l' %}
+        {% set manual_id= 'input_number.watermeter_setpoint'%}
+
+        {% if trigger.platform=='state' and trigger.entity_id==manual_id %}
+          {% set last_state = states[manual_id].state| float(0) %}
+        {% elif has_value(this.entity_id) %}
+          {% set last_state = states[this.entity_id].state| float(0) %}
+        {% elif has_value(sql_id) %}  
+          {% set last_state = states[sql_id].state| float(0) %}
+        {% else %}
+          {% set last_state = float(0) %}
+        {% endif %}
+        
+        {% if trigger.platform=='state' and has_value(trigger_id) and trigger.entity_id==trigger_id %}
+          {% set to_state = trigger.to_state.state| float(0) %}
+          {% set from_state = trigger.from_state.state| float(0) %}
+          {% set delta = to_state - from_state| float(0) %}
+        {% else %}
+          {% set delta = float(0) %}
+        {% endif %}
+
+        {{ last_state + delta| abs }}
+      attributes:
+        last_trigger_time: "{{ now().isoformat() }}"
+        last_trigger_platform: "{{ trigger.platform }}"        
+        last_trigger_entity: "{{ trigger.entity_id }}"

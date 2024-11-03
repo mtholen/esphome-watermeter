@@ -1,0 +1,169 @@
+substitutions:
+  name: watermeter-v2
+  friendly_name: "Watermeter-V2"
+  
+esphome:
+  name: watermeter-v2
+  on_boot: 
+    then:
+    - lambda: |-
+        id(pulse_factor) = 1.186;
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "T8ys2zxBEHeRNKV8w3Pn0libiAve2m8p73svkaE4bJQ="
+  services:
+    - service: set_total_pulses
+      variables:
+        new_total: float
+      then:
+        - pulse_meter.set_total_pulses:
+            id: water_pulse_meter
+            value: !lambda |-  
+              id(watermeter_total_ltr) = 0;
+              return new_total;
+    
+ota:
+  - platform: esphome
+    password: "be19fffc1ddf5c142e60f6981667e17d"
+
+wifi:
+  networks:
+    - ssid: !secret pri_wifi_ssid
+      password: !secret pri_wifi_password
+    - ssid: !secret sec_wifi_ssid
+      password: !secret sec_wifi_password
+
+#Optional manual IP
+  manual_ip:
+    static_ip: 192.168.1.183
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Watermeter-V2 Fallback Hotspot"
+    password: "Cmdq47lJhYif"
+
+captive_portal:
+
+globals:
+  - id: pulse_factor
+    type: float
+    restore_value: true
+    initial_value: '1.0'
+  # - id: initial_water_usage
+  #   type: float
+  #   restore_value: true
+  #   initial_value: '0.0'
+  - id: watermeter_total_ltr
+    type: int
+    restore_value: true
+    initial_value: '0'
+  # - id: watermeter_total_ltr_02
+  #   type: int
+  #   restore_value: true
+  #   initial_value: '0'
+  # - id: total_water_pulses
+  #   type: int
+  #   initial_value: '0'
+  #   restore_value: true    
+
+number:
+  - name: "pulse factor"
+    platform: template
+    id: set_pulse_factor
+    device_class: water
+    optimistic: true
+    initial_value: 1.0
+    min_value: 0
+    max_value: 1000
+    step: 0.0001
+    entity_category: config
+    icon: mdi:water
+    # unit_of_measurement: ""
+    disabled_by_default: false
+    restore_value: true
+    set_action:
+      - lambda: |-
+          id(pulse_factor) = x;
+              
+sensor:
+  - platform: pulse_meter
+    id: water_pulse_meter
+    device_class: water
+    pin:
+      number: GPIO13
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: "watermeter flowrate" 
+    # update_interval: 15sec
+    internal_filter: 50us #10us
+    unit_of_measurement: "L/min"
+    accuracy_decimals: 2
+    timeout: 
+      minutes: 2
+    icon: "mdi:water"
+    filters:
+      # - throttle_average: 
+      #     seconds: 15
+      #     minutes: 0    
+      - lambda: return (x * id(pulse_factor));
+    total: 
+      id: water_pulse_meter_total
+      name: "watermeter total (m³)"
+      state_class: "total_increasing"
+      device_class: water
+      icon: mdi:water
+      unit_of_measurement: "m³"
+      accuracy_decimals: 3
+      filters:
+        - multiply: 0.001
+        - lambda: |-
+            id(watermeter_total_ltr) = static_cast<int>(round(x * 1000));            
+            return x;            
+  
+  # ⬇ Watermeter stand bij benadering ⬇ #
+  - platform: template
+    id: watermeter_total_01    
+    name: "watermeter total (L)"
+    state_class: "total_increasing"
+    device_class: water
+    icon: "mdi:water"
+    unit_of_measurement: "L"
+    update_interval: 15s
+    accuracy_decimals: 0
+    lambda: return id(watermeter_total_ltr);
+  
+  # - platform: template
+  #   id: watermeter_total_02    
+  #   name: "watermeter total (L)"
+  #   state_class: "total_increasing"
+  #   device_class: water
+  #   icon: "mdi:water"
+  #   unit_of_measurement: "L"
+  #   update_interval: 15s
+  #   accuracy_decimals: 0
+  #   lambda: return id(watermeter_total_ltr_01);
+  
+  # - platform: homeassistant
+  #   id: watermeter_total_retention
+  #   entity_id: input_number.watermeter_total_retention
+    
+  # # ⬇ Waterpulses  only web interface for debugging ⬇ #
+  # - platform: template
+  #   id: watermeter_flow_totaal
+  #   name: "watermeter pulse total"
+  #   state_class: "total_increasing"
+  #   accuracy_decimals: 0
+  #   lambda: return id(total_water_pulses);
+  #   internal: True
