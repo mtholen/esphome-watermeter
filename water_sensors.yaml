@@ -1,17 +1,3 @@
-# - trigger:    
-#     - trigger: template
-#       id: template
-#       value_template: >
-#         {{ now().minute % 2==0 }}
-#     - trigger: time_pattern
-#       id: pattern
-#       minutes: "/5"
-#   sensor:
-#     - name: "Watermeter Test"
-#       unique_id: sensor.watermeter_test
-#       state: >
-#         {{ trigger.id }}
-
 - trigger:
     - trigger: template
       value_template: >
