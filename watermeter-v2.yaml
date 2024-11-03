@@ -36,15 +36,13 @@ ota:
 
 wifi:
   networks:
-    - ssid: !secret pri_wifi_ssid
-      password: !secret pri_wifi_password
-    - ssid: !secret sec_wifi_ssid
-      password: !secret sec_wifi_password
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
 
 #Optional manual IP
   manual_ip:
-    static_ip: 192.168.1.183
-    gateway: 192.168.1.1
+    static_ip: xxx.xxx.xxx #add your own preferred IP address or remove this section
+    gateway: xxx.xxx.xxx
     subnet: 255.255.255.0
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
@@ -59,22 +57,10 @@ globals:
     type: float
     restore_value: true
     initial_value: '1.0'
-  # - id: initial_water_usage
-  #   type: float
-  #   restore_value: true
-  #   initial_value: '0.0'
   - id: watermeter_total_ltr
     type: int
     restore_value: true
     initial_value: '0'
-  # - id: watermeter_total_ltr_02
-  #   type: int
-  #   restore_value: true
-  #   initial_value: '0'
-  # - id: total_water_pulses
-  #   type: int
-  #   initial_value: '0'
-  #   restore_value: true    
 
 number:
   - name: "pulse factor"
@@ -143,21 +129,6 @@ sensor:
     update_interval: 15s
     accuracy_decimals: 0
     lambda: return id(watermeter_total_ltr);
-  
-  # - platform: template
-  #   id: watermeter_total_02    
-  #   name: "watermeter total (L)"
-  #   state_class: "total_increasing"
-  #   device_class: water
-  #   icon: "mdi:water"
-  #   unit_of_measurement: "L"
-  #   update_interval: 15s
-  #   accuracy_decimals: 0
-  #   lambda: return id(watermeter_total_ltr_01);
-  
-  # - platform: homeassistant
-  #   id: watermeter_total_retention
-  #   entity_id: input_number.watermeter_total_retention
     
   # # ⬇ Waterpulses  only web interface for debugging ⬇ #
   # - platform: template
